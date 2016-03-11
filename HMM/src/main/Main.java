@@ -58,10 +58,10 @@ public class Main {
         Vars.totalExecutionTime  = timeLimit;
         double results[] = new double[problem.getNumberOfHeuristics()];
         //for (int i = 0; i < runs; i++) {
-            //MABHH mab = new MABHH(seed, problem.getNumberOfHeuristics(), timeLimit, acc);
-            //mab.setTimeLimit(timeLimit);
-            //mab.loadProblemDomain(problem);
-            //mab.run();
+            HMM hmm = new HMM(seed, problem.getNumberOfHeuristics(), timeLimit, acc);
+            hmm.setTimeLimit(timeLimit);
+            hmm.loadProblemDomain(problem);
+            hmm.run();
             //System.out.println("Melhor Solução: " + mab.getBestSolutionValue());
     }
 
