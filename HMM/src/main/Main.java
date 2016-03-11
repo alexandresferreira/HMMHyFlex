@@ -35,7 +35,7 @@ public class Main {
         int instance = 7;
         //long seed = 1234;
         long seed = System.currentTimeMillis();
-        int acc = 0;
+       int acc = 0;
         //double scalingFactor = 10.0;
         problem = new BinPacking(seed);
         if (args.length == 1) {
@@ -49,27 +49,11 @@ public class Main {
             problem = getProblem(args[0], seed);
             instance = Integer.parseInt(args[1]);
             timeLimit = Long.parseLong(args[2]);
-            acc = Integer.parseInt(args[3]);
         }
-        else if(args.length == 5){
-	    problem = getProblem(args[0], seed);
-            instance = Integer.parseInt(args[1]);
-            timeLimit = Long.parseLong(args[2]);
-            acc = Integer.parseInt(args[3]);
-            Vars.scalingFactor = Double.parseDouble(args[4]); 
-        }
-	else if(args.length == 6){
-	    problem = getProblem(args[0], seed);
-            instance = Integer.parseInt(args[1]);
-            timeLimit = Long.parseLong(args[2]);
-            acc = Integer.parseInt(args[3]);
-            Vars.scalingFactor = Double.parseDouble(args[4]);
-            Vars.windowSize = Double.parseDouble(args[5]);
-	}
+
 
         problem.loadInstance(instance);
         System.out.println("Seed: " + seed);
-        System.out.println("Scaling Factor: " + Vars.scalingFactor + " Tamanho da Window: " + Vars.windowSize);
         System.out.println("Problema: " + problem.toString() + " instancia: " + instance + " timeLimit: " + timeLimit);
         Vars.totalExecutionTime  = timeLimit;
         double results[] = new double[problem.getNumberOfHeuristics()];

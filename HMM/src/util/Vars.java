@@ -30,43 +30,42 @@ public class Vars implements Serializable {
      * The total execution time allowed (stopping condition) *
      */
     public static long totalExecutionTime = 480000;
+    
+    public static int mabType = 2;
     /**
      * The number of trials for solving each problem instance *
      */
-    
+
     public static boolean breakpoint1 = true;
     public static boolean breakpoint2 = true;
     public static int numberOfTrials = 30;
 
     public static long limitOfIterationsStuck = 90000;
-    
-    
-    public static long iterMax;
-    
-    
 
-   public static int numberOfRestarts = 0;
-    
+    public static long iterMax;
+
+    public static int numberOfRestarts = 0;
+
     public static boolean setWSize = true;
-   
+
     // windowsize
-    public static double  windowSize = 100;
+    public static double windowSize = 100;
     //Scaling Factor Autoupdate parameters
-    public static double scalingFactor = 0.0002;
+    public static double scalingFactor = 8;
     public static double scalingUpperBound = 1.0;
     public static double scalingLowerBound = 0.1;
     public static double incrementScaling = 0.1;
     public static double decrementScaling = 0.1;
-    
+
     //SimulatedAnnealing parameter
     public static double temperature = 1;
     public static boolean reduceTemperature = false;
     //public static double decrementTemp = 0.00003;
     //public static double tempLowerBound = 0.00000001;
-    
-    
+
     /**
-     * Whether the heuristics' parameters are oscillated in case of getting stuck*
+     * Whether the heuristics' parameters are oscillated in case of getting
+     * stuck*
      */
     public final static boolean oscilateLOCValues = false;
 
@@ -239,7 +238,7 @@ public class Vars implements Serializable {
      * @return	tabu duration (d)
      */
     public static int calculateDHSParams(int numberOfHeuristics, int PLFactor) {
-        double tabuDuration = Math.sqrt(2 * numberOfHeuristics/2);
+        double tabuDuration = Math.sqrt(2 * numberOfHeuristics / 2);
         Vars.tabuDuration = (int) tabuDuration;
         if (tabuDuration - (Math.floor(tabuDuration)) >= 0.5) {
             Vars.tabuDuration += 1;
