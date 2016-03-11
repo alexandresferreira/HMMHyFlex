@@ -5,6 +5,7 @@ import AbstractClasses.HyperHeuristic;
 import AbstractClasses.ProblemDomain;
 import AbstractClasses.ProblemDomain.HeuristicType;
 import java.text.DecimalFormat;
+import java.util.concurrent.TimeUnit;
 import moveAcceptance.AcceptanceCriterion;
 import moveAcceptance.Adaptative;
 import moveAcceptance.AllMoves;
@@ -35,6 +36,7 @@ public class HMM extends HyperHeuristic{
     private long startTime;
     private long currentTime;
     private int totalNumOfNewBestFound;
+    private long lastIterationBest;
     private int[] local_search_heuristics;
     private int[] heuristics;
     private int[] acceptances;
@@ -53,8 +55,9 @@ public class HMM extends HyperHeuristic{
     private double [][][] transParameters;
     private int [][][] scoresParameters;
     // trasition and score matrix for acceptance
-    private double [][][] transAcceptance;
-    private int [][][] scoreAcceptance;
+    private double [][][] transAcceptances;
+    private int [][][] scoresAcceptances;
+     private AcceptanceCriterion acceptance;
     
     public HMM(long seed, int numberOfHeuristics, long totalExecTime, int acc) {
         super(seed);
@@ -75,14 +78,19 @@ public class HMM extends HyperHeuristic{
         realNumberOfHeuristics  = numberOfHeuristics - crossover_heuristics.length;
         heuristics = getNonCrossoverHeuristics();
         parameters = getParameters();
-        acceptances = new int[2];
-        acceptances[0]=0; acceptances[1]=1;
+        acceptances = getAcceptances();
         transHeuristics = new double [realNumberOfHeuristics][realNumberOfHeuristics][realNumberOfHeuristics];
         scoresHeuristics = new int [realNumberOfHeuristics][realNumberOfHeuristics][realNumberOfHeuristics];
-        transParameters = new double[realNumberOfHeuristics][realNumberOfHeuristics][9];
-        scoresParameters = new int[realNumberOfHeuristics][realNumberOfHeuristics][9];
-        transParameters = new double[realNumberOfHeuristics][realNumberOfHeuristics][2];
-        scoresParameters = new int[realNumberOfHeuristics][realNumberOfHeuristics][2];
+        transParameters = new double[realNumberOfHeuristics][realNumberOfHeuristics][Vars.numberOfParameters];
+        scoresParameters = new int[realNumberOfHeuristics][realNumberOfHeuristics][Vars.numberOfParameters];
+        transAcceptances = new double[realNumberOfHeuristics][realNumberOfHeuristics][Vars.numberOfAcceptances];
+        scoresAcceptances = new int[realNumberOfHeuristics][realNumberOfHeuristics][Vars.numberOfAcceptances];
+        initializeScores(scoresHeuristics, realNumberOfHeuristics);
+        initializeScores(scoresParameters, Vars.numberOfParameters);
+        initializeScores(scoresAcceptances, Vars.numberOfAcceptances);
+        initializeProbabilities(transHeuristics, realNumberOfHeuristics);
+        initializeProbabilities(transParameters, Vars.numberOfParameters);
+        initializeProbabilities(transAcceptances, Vars.numberOfAcceptances);
     }
 
 
@@ -104,7 +112,62 @@ public class HMM extends HyperHeuristic{
         //System.out.println("Tamanho da Window: " + selection.getWindowSize());
         System.out.println("Solução inicial: " + problem.getFunctionValue(0));
         bestFitness = currentFitness = newFitness = problem.getFunctionValue(0);
-    
+        
+        while (!hasTimeExpired()) {
+            //lastCalledHeuristic = selection.selectHeuristic();
+            //problem.setIntensityOfMutation(selection.getLevelOfChangeList()[lastCalledHeuristic]);
+            //problem.setDepthOfSearch(selection.getLevelOfChangeList()[lastCalledHeuristic]);
+
+            startHeur = System.nanoTime();
+            //if (isCrossover(lastCalledHeuristic)) {
+                //System.out.println("Enoutr aqui");
+               // int slnInxForCrossover = rng.nextInt(5) + 5;
+                //newFitness = problem.applyHeuristic(lastCalledHeuristic, 0, slnInxForCrossover, 1);
+            //} else {
+                newFitness = problem.applyHeuristic(lastCalledHeuristic, 0, 1);
+            //}
+            endHeur = System.nanoTime();
+  
+            double delta = Math.max(0, ((currentFitness - newFitness) / currentFitness));
+
+            //acceptance
+            if (acceptance.accept(newFitness, currentFitness, bestFitness)) {
+                problem.copySolution(1, 0);
+                if (newFitness < bestFitness) {
+                    totalNumOfNewBestFound++;
+                    /* Update the best fitness value */
+                    bestFitness = newFitness;
+                    lastIterationBest = numberOfIterations;
+                    /* Change randomly one of the solution used for crossovers (or any heuristic requiring two solutions) */
+                    int randMemIndex = rng.nextInt(5) + 5;
+                    problem.copySolution(1, randMemIndex);
+                    /* Copy the new best solution to the solution memory */
+                    problem.copySolution(0, 10);
+
+                }
+                currentFitness = newFitness;
+            }
+  
+            numberOfIterations++;
+            auxNumberIt++;
+            /* Increment the phase iteration counter */
+            //currentTime = System.currentTimeMillis() - startTime;
+            timesUsed[lastCalledHeuristic]++;
+            totalTime[lastCalledHeuristic] += (endHeur - startHeur);
+            pastHeuristic = lastCalledHeuristic;
+            //System.out.println(problem.getFunctionValue(0) + " " + lastCalledHeuristic + improv);
+            currentTime = System.currentTimeMillis() - startTime;
+        }
+     
+        System.out.println("Número de iterações executadas: " + numberOfIterations);
+        System.out.println("Ultima iteração onde um ótimo foi encontrado: " + lastIterationBest);
+        //System.out.println("Parâmetros finais para o HyFlex: ");
+        //double x[] = selection.getLevelOfChangeList();
+        System.out.println("Vezes usada: ");
+        for (int i = 0; i < numberOfHeuristics; i++) {
+            System.out.println("Heurística: " + i + " " + timesUsed[i] + " " + fmt.format(timesUsed[i] * 100.0 / numberOfIterations) + "% Tempo " 
+                    + TimeUnit.NANOSECONDS.toMillis(totalTime[i]));
+        }
     }
 
     
@@ -159,12 +222,44 @@ public class HMM extends HyperHeuristic{
     }
 
     private double[] getParameters() {
-        double [] aux = new double[9];
-        for (int i = 0; i < 9; i++) {
+        double [] aux = new double[Vars.numberOfParameters];
+        for (int i = 0; i < Vars.numberOfParameters; i++) {
             if(i == 0){
                 aux[i] = 0.1;
             }else
                 aux[i] = 0.1 + aux[i-1];
+        }
+        return aux;
+    }
+
+    private void initializeScores(int[][][] matrix, int tam) {
+        for (int i = 0; i < realNumberOfHeuristics; i++) {
+            for (int j = 0; j < realNumberOfHeuristics; j++) {
+                for (int k = 0; k < tam; k++) {
+                    matrix[i][j][k]=1;
+                }
+            }
+        }
+    }
+
+    private void initializeProbabilities(double[][][] matrix, int tam) {
+        double prob = 1/tam;
+        for (int i = 0; i < realNumberOfHeuristics; i++) {
+            for (int j = 0; j < realNumberOfHeuristics; j++) {
+                for (int k = 0; k < tam; k++) {
+                    matrix[i][j][k]=prob;
+                }
+            }
+        }
+    }
+
+    private int[] getAcceptances() {
+        int [] aux = new int[Vars.numberOfAcceptances];
+        for (int i = 0; i < Vars.numberOfParameters; i++) {
+            if(i == 0){
+                aux[i] = 0;
+            }else
+                aux[i] = 1 + aux[i-1];
         }
         return aux;
     }

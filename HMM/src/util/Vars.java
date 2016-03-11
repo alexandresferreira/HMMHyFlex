@@ -20,6 +20,7 @@ public class Vars implements Serializable {
     //SimulatedAnnealing parameter
     public static double temperature = 1;
     public static boolean reduceTemperature = false;
-    
+    public static int numberOfParameters = 9;
+    public static int numberOfAcceptances = 2;
     public static boolean isAtStuck = false;
 }
