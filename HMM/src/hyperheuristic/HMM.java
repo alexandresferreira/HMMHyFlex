@@ -4,6 +4,7 @@ import AbstractClasses.HyperHeuristic;
 import AbstractClasses.ProblemDomain;
 import AbstractClasses.ProblemDomain.HeuristicType;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import moveAcceptance.AcceptanceCriterion;
 import moveAcceptance.Adaptative;
@@ -38,7 +39,7 @@ public class HMM extends HyperHeuristic {
     private int totalNumOfNewBestFound;
     private long lastIterationBest;
     private int[] local_search_heuristics;
-    private int[] heuristics;
+    private ArrayList<Integer> heuristics;
     private int[] acceptances;
     private double[] parameters;
     private int[] mutation_heuristics;
@@ -64,19 +65,21 @@ public class HMM extends HyperHeuristic {
         this.numberOfHeuristics = numberOfHeuristics;
         this.numberOfIterations = 0;
         this.totalExecTime = totalExecTime;
+        heuristics = new ArrayList<Integer>();
         Vars.totalExecutionTime = totalExecTime;
         heuristicTypeList = new HeuristicType[numberOfHeuristics];
         timesUsed = new double[numberOfHeuristics];
         totalTime = new long[numberOfHeuristics];
         heuristicClassTypeList = new HeuristicClassType[numberOfHeuristics];
         this.acceptanceType = acc;
+        acceptance = new RecordToRecord(rng);
 
     }
 
     private void initializeValues(ProblemDomain problem) {
         setHeuristicTypes(problem);
         realNumberOfHeuristics = numberOfHeuristics - crossover_heuristics.length;
-        heuristics = getNonCrossoverHeuristics();
+        initializeNonCrossoverHeuristics();
         parameters = getParameters();
         acceptances = getAcceptances();
         transHeuristics = new double[realNumberOfHeuristics][realNumberOfHeuristics];
@@ -97,6 +100,7 @@ public class HMM extends HyperHeuristic {
     protected void solve(ProblemDomain problem) {
         DecimalFormat fmt = new DecimalFormat("0.00");
         initializeValues(problem);
+        printDoubleMatrix(transHeuristics, realNumberOfHeuristics);
         problem.setMemorySize(12);
         long endTime;
         int auxNumberIt = 0;
@@ -105,14 +109,14 @@ public class HMM extends HyperHeuristic {
         problem.copySolution(0, 10);
         System.out.println("Heuristicas:");
         for (int i = 0; i < realNumberOfHeuristics; i++) {
-            System.out.print(heuristics[i] + " ");
+            System.out.print(heuristics.get(i) + " ");
         }
         System.out.println("");
         //System.out.println("Tamanho da Window: " + selection.getWindowSize());
         System.out.println("Solução inicial: " + problem.getFunctionValue(0));
         bestFitness = currentFitness = newFitness = problem.getFunctionValue(0);
 
-        while (!hasTimeExpired()) {
+        //while (!hasTimeExpired()) {
             //lastCalledHeuristic = selection.selectHeuristic();
             //problem.setIntensityOfMutation(selection.getLevelOfChangeList()[lastCalledHeuristic]);
             //problem.setDepthOfSearch(selection.getLevelOfChangeList()[lastCalledHeuristic]);
@@ -156,7 +160,7 @@ public class HMM extends HyperHeuristic {
             pastHeuristic = lastCalledHeuristic;
             //System.out.println(problem.getFunctionValue(0) + " " + lastCalledHeuristic + improv);
             currentTime = System.currentTimeMillis() - startTime;
-        }
+        //}
 
         System.out.println("Número de iterações executadas: " + numberOfIterations);
         System.out.println("Ultima iteração onde um ótimo foi encontrado: " + lastIterationBest);
@@ -170,6 +174,10 @@ public class HMM extends HyperHeuristic {
     }
 
     private void setHeuristicTypes(ProblemDomain problem) {
+        local_search_heuristics = problem.getHeuristicsOfType(ProblemDomain.HeuristicType.LOCAL_SEARCH);
+        mutation_heuristics = problem.getHeuristicsOfType(ProblemDomain.HeuristicType.MUTATION);
+        ruin_recreate_heuristics = problem.getHeuristicsOfType(ProblemDomain.HeuristicType.RUIN_RECREATE);
+        crossover_heuristics = problem.getHeuristicsOfType(ProblemDomain.HeuristicType.CROSSOVER);
 
         for (int i = 0; i < local_search_heuristics.length; i++) {
             heuristicTypeList[local_search_heuristics[i]] = HeuristicType.LOCAL_SEARCH;
@@ -205,18 +213,16 @@ public class HMM extends HyperHeuristic {
         return "HMM"; //To change body of generated methods, choose Tools | Templates.
     }
 
-    private int[] getNonCrossoverHeuristics() {
-        int aux[] = new int[realNumberOfHeuristics];
+    private void initializeNonCrossoverHeuristics() {
         for (int i = 0; i < local_search_heuristics.length; i++) {
-            aux[i] = local_search_heuristics[i];
+            heuristics.add(local_search_heuristics[i]);
         }
         for (int i = 0; i < ruin_recreate_heuristics.length; i++) {
-            aux[local_search_heuristics.length + i] = ruin_recreate_heuristics[i];
+            heuristics.add(ruin_recreate_heuristics[i]);
         }
         for (int i = 0; i < mutation_heuristics.length; i++) {
-            aux[ruin_recreate_heuristics.length + i] = mutation_heuristics[i];
+            heuristics.add(mutation_heuristics[i]);
         }
-        return aux;
     }
 
     private double[] getParameters() {
@@ -240,7 +246,7 @@ public class HMM extends HyperHeuristic {
     }
 
     private void initializeProbabilities(double[][] matrix, int tam) {
-        double prob = 1/tam;
+        double prob = 1.0/(double)tam;
         for (int i = 0; i < realNumberOfHeuristics; i++) {
             for (int j = 0; j < tam; j++) {
                 matrix[i][j] = prob;
@@ -254,7 +260,7 @@ public class HMM extends HyperHeuristic {
 
     private int[] getAcceptances() {
         int[] aux = new int[Vars.numberOfAcceptances];
-        for (int i = 0; i < Vars.numberOfParameters; i++) {
+        for (int i = 0; i < Vars.numberOfAcceptances; i++) {
             if (i == 0) {
                 aux[i] = 0;
             } else {
@@ -263,5 +269,24 @@ public class HMM extends HyperHeuristic {
         }
         return aux;
     }
+    
+    private void printDoubleMatrix(double[][] matrix, int m){
+        for(int i = 0 ; i < matrix.length; i++){
+            for (int j = 0; j < m; j++) {
+                System.out.print(matrix[i][j]+" ");
+            }
+            System.out.println("");
+        }
+    }
+    
+    private void printIntMatrix(int[][] matrix, int m){
+        for(int i = 0 ; i < matrix.length; i++){
+            for (int j = 0; j < m; j++) {
+                System.out.print(matrix[i][j]+" ");
+            }
+            System.out.println("");
+        }
+    }
+
 
 }
