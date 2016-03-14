@@ -26,13 +26,12 @@ import util.Vars;
 public class HMM extends HyperHeuristic {
 
     private int numberOfHeuristics;
+    private DecimalFormat fmt;
     // number of heuristics withtou crossover ones
     private int realNumberOfHeuristics;
     private long numberOfIterations;
     private int acceptanceType;
     private long totalExecTime;
-    private int lastCalledHeuristic;
-    private int pastHeuristic;
     private double currentFitness;
     private double newFitness;
     private double bestFitness;
@@ -63,7 +62,7 @@ public class HMM extends HyperHeuristic {
     private AcceptanceCriterion acceptance;
     private int prevHeuristic;
     private int currHeuristic;
-    private double p;
+    private int p;
     private int a;
 
     public HMM(long seed, int numberOfHeuristics, long totalExecTime, int acc) {
@@ -73,13 +72,13 @@ public class HMM extends HyperHeuristic {
         this.totalExecTime = totalExecTime;
         heuristics = new ArrayList<Integer>();
         Vars.totalExecutionTime = totalExecTime;
+        this.acceptanceType = acc;
+        acceptance = new RecordToRecord(rng);
+        fmt = new DecimalFormat("0.00");
         heuristicTypeList = new HeuristicType[numberOfHeuristics];
         timesUsed = new double[numberOfHeuristics];
         totalTime = new long[numberOfHeuristics];
         heuristicClassTypeList = new HeuristicClassType[numberOfHeuristics];
-        this.acceptanceType = acc;
-        acceptance = new RecordToRecord(rng);
-
     }
 
     private void initializeValues(ProblemDomain problem) {
@@ -104,9 +103,8 @@ public class HMM extends HyperHeuristic {
 
     @Override
     protected void solve(ProblemDomain problem) {
-        DecimalFormat fmt = new DecimalFormat("0.00");
         initializeValues(problem);
-        printDoubleMatrix(transHeuristics, realNumberOfHeuristics);
+        printDoubleMatrix(transHeuristics);
         problem.setMemorySize(12);
         long endTime;
         int auxNumberIt = 0;
@@ -121,25 +119,25 @@ public class HMM extends HyperHeuristic {
         //System.out.println("Tamanho da Window: " + selection.getWindowSize());
         System.out.println("Solução inicial: " + problem.getFunctionValue(0));
         bestFitness = currentFitness = newFitness = problem.getFunctionValue(0);
-
+        prevHeuristic = 0;
         while (!hasTimeExpired()) {
             //lastCalledHeuristic = selection.selectHeuristic();
-            currHeuristic = select(transHeuristics, 0);
-            //problem.setIntensityOfMutation(selection.getLevelOfChangeList()[lastCalledHeuristic]);
-            //problem.setDepthOfSearch(selection.getLevelOfChangeList()[lastCalledHeuristic]);
+            currHeuristic = select(transHeuristics, prevHeuristic);
+            System.out.print("Heuristica escolhida: " + currHeuristic + " ");
+            p = select(transParameters, currHeuristic);
+           System.out.print("Parâmetro: " + parameters[p] + " ");
+            a = select(transAcceptances, currHeuristic);
+           System.out.println("Accep: " + acceptances[a]);
+            problem.setIntensityOfMutation(parameters[p]);
+            problem.setDepthOfSearch(parameters[p]);
+            
             startHeur = System.nanoTime();
-            //if (isCrossover(lastCalledHeuristic)) {
-            //System.out.println("Enoutr aqui");
-            // int slnInxForCrossover = rng.nextInt(5) + 5;
-            //newFitness = problem.applyHeuristic(lastCalledHeuristic, 0, slnInxForCrossover, 1);
-            //} else {
-            newFitness = problem.applyHeuristic(lastCalledHeuristic, 0, 1);
-            //}
+            newFitness = problem.applyHeuristic(currHeuristic, 0, 1);
             endHeur = System.nanoTime();
 
-            double delta = Math.max(0, ((currentFitness - newFitness) / currentFitness));
+            //double delta = Math.max(0, ((currentFitness - newFitness) / currentFitness));
 
-            if (a == 1) {
+            if (acceptances[a] == 1) {
                 if (acceptance.accept(newFitness, currentFitness, bestFitness)) {
                     problem.copySolution(1, 0);
                     if (newFitness < bestFitness) {
@@ -149,18 +147,30 @@ public class HMM extends HyperHeuristic {
                         lastIterationBest = numberOfIterations;
                         /* Copy the new best solution to the solution memory */
                         problem.copySolution(0, 10);
+                        updateScore(scoresHeuristics, prevHeuristic, currHeuristic);
+                        updateScore(scoresParameters, currHeuristic, p);
+                        updateScore(scoresAcceptances, currHeuristic, a);
+                        updateProbabilities(scoresHeuristics, transHeuristics, prevHeuristic, currHeuristic);
+                        printDoubleMatrix(transHeuristics);
+                        System.out.println("Parâmetros");
+                        updateProbabilities(scoresParameters, transParameters, currHeuristic, p);
+                        printDoubleMatrix(transParameters);
+                        System.out.println("Acceptances");
+                        updateProbabilities(scoresAcceptances, transAcceptances, currHeuristic, a);
+                        printDoubleMatrix(transAcceptances);
+                        
                     }
                     currentFitness = newFitness;
                 }
             }
-
+            
             numberOfIterations++;
             auxNumberIt++;
             /* Increment the phase iteration counter */
             //currentTime = System.currentTimeMillis() - startTime;
-            timesUsed[lastCalledHeuristic]++;
-            totalTime[lastCalledHeuristic] += (endHeur - startHeur);
-            pastHeuristic = lastCalledHeuristic;
+            timesUsed[currHeuristic]++;
+            totalTime[currHeuristic] += (endHeur - startHeur);
+            prevHeuristic = currHeuristic;
             //System.out.println(problem.getFunctionValue(0) + " " + lastCalledHeuristic + improv);
             currentTime = System.currentTimeMillis() - startTime;
         }
@@ -170,8 +180,8 @@ public class HMM extends HyperHeuristic {
         //System.out.println("Parâmetros finais para o HyFlex: ");
         //double x[] = selection.getLevelOfChangeList();
         System.out.println("Vezes usada: ");
-        for (int i = 0; i < numberOfHeuristics; i++) {
-            System.out.println("Heurística: " + i + " " + timesUsed[i] + " " + fmt.format(timesUsed[i] * 100.0 / numberOfIterations) + "% Tempo "
+        for (int i = 0; i < realNumberOfHeuristics; i++) {
+            System.out.println("Heurística: " + heuristics.get(i) + " " + timesUsed[heuristics.get(i)] + " " + fmt.format(timesUsed[heuristics.get(i)] * 100.0 / numberOfIterations) + "% Tempo "
                     + TimeUnit.NANOSECONDS.toMillis(totalTime[i]));
         }
     }
@@ -275,8 +285,14 @@ public class HMM extends HyperHeuristic {
         matrix[heuristic][selectedIndex] += 1;
     }
     
-    private void updateProbabilities(double[][] matrix, int heuristic, int selectedIndex) {
-        matrix[heuristic][selectedIndex] += 1;
+    private void updateProbabilities(int[][] scores, double[][] matrix, int heuristic, int selectedIndex) {
+        double sum = 0.0;
+        for(int j = 0; j < scores[heuristic].length; j++){
+            sum += scores[heuristic][j];
+        }
+        for(int j = 0; j < matrix[heuristic].length; j++){
+            matrix[heuristic][j] = (double) scores[heuristic][j]/(double) sum;
+        }
     }
 
     private int[] getAcceptances() {
@@ -291,18 +307,18 @@ public class HMM extends HyperHeuristic {
         return aux;
     }
 
-    private void printDoubleMatrix(double[][] matrix, int m) {
+    private void printDoubleMatrix(double[][] matrix) {
         for (int i = 0; i < matrix.length; i++) {
-            for (int j = 0; j < m; j++) {
-                System.out.print(matrix[i][j] + " ");
+            for (int j = 0; j < matrix[0].length; j++) {
+                System.out.print(fmt.format(matrix[i][j]) + " ");
             }
             System.out.println("");
         }
     }
 
-    private void printIntMatrix(int[][] matrix, int m) {
+    private void printIntMatrix(int[][] matrix) {
         for (int i = 0; i < matrix.length; i++) {
-            for (int j = 0; j < m; j++) {
+            for (int j = 0; j < matrix[0].length; j++) {
                 System.out.print(matrix[i][j] + " ");
             }
             System.out.println("");

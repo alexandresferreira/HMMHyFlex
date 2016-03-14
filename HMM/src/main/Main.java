@@ -62,7 +62,7 @@ public class Main {
             hmm.setTimeLimit(timeLimit);
             hmm.loadProblemDomain(problem);
             hmm.run();
-            //System.out.println("Melhor Solução: " + mab.getBestSolutionValue());
+            System.out.println("Melhor Solução: " + hmm.getBestSolutionValue());
     }
 
     public static ProblemDomain getProblem(String problem, long seed) {
