@@ -5,6 +5,7 @@ import AbstractClasses.ProblemDomain;
 import AbstractClasses.ProblemDomain.HeuristicType;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import moveAcceptance.AcceptanceCriterion;
 import moveAcceptance.Adaptative;
@@ -16,6 +17,7 @@ import moveAcceptance.OnlyBetter;
 import moveAcceptance.RecordToRecord;
 import moveAcceptance.SimulatedAnnealing;
 import util.Vars;
+
 
 /**
  *
@@ -59,6 +61,10 @@ public class HMM extends HyperHeuristic {
     private double[][] transAcceptances;
     private int[][] scoresAcceptances;
     private AcceptanceCriterion acceptance;
+    private int prevHeuristic;
+    private int currHeuristic;
+    private double p;
+    private int a;
 
     public HMM(long seed, int numberOfHeuristics, long totalExecTime, int acc) {
         super(seed);
@@ -116,11 +122,11 @@ public class HMM extends HyperHeuristic {
         System.out.println("Solução inicial: " + problem.getFunctionValue(0));
         bestFitness = currentFitness = newFitness = problem.getFunctionValue(0);
 
-        //while (!hasTimeExpired()) {
+        while (!hasTimeExpired()) {
             //lastCalledHeuristic = selection.selectHeuristic();
+            currHeuristic = select(transHeuristics, 0);
             //problem.setIntensityOfMutation(selection.getLevelOfChangeList()[lastCalledHeuristic]);
             //problem.setDepthOfSearch(selection.getLevelOfChangeList()[lastCalledHeuristic]);
-
             startHeur = System.nanoTime();
             //if (isCrossover(lastCalledHeuristic)) {
             //System.out.println("Enoutr aqui");
@@ -133,22 +139,19 @@ public class HMM extends HyperHeuristic {
 
             double delta = Math.max(0, ((currentFitness - newFitness) / currentFitness));
 
-            //acceptance
-            if (acceptance.accept(newFitness, currentFitness, bestFitness)) {
-                problem.copySolution(1, 0);
-                if (newFitness < bestFitness) {
-                    totalNumOfNewBestFound++;
-                    /* Update the best fitness value */
-                    bestFitness = newFitness;
-                    lastIterationBest = numberOfIterations;
-                    /* Change randomly one of the solution used for crossovers (or any heuristic requiring two solutions) */
-                    int randMemIndex = rng.nextInt(5) + 5;
-                    problem.copySolution(1, randMemIndex);
-                    /* Copy the new best solution to the solution memory */
-                    problem.copySolution(0, 10);
-
+            if (a == 1) {
+                if (acceptance.accept(newFitness, currentFitness, bestFitness)) {
+                    problem.copySolution(1, 0);
+                    if (newFitness < bestFitness) {
+                        totalNumOfNewBestFound++;
+                        /* Update the best fitness value */
+                        bestFitness = newFitness;
+                        lastIterationBest = numberOfIterations;
+                        /* Copy the new best solution to the solution memory */
+                        problem.copySolution(0, 10);
+                    }
+                    currentFitness = newFitness;
                 }
-                currentFitness = newFitness;
             }
 
             numberOfIterations++;
@@ -160,7 +163,7 @@ public class HMM extends HyperHeuristic {
             pastHeuristic = lastCalledHeuristic;
             //System.out.println(problem.getFunctionValue(0) + " " + lastCalledHeuristic + improv);
             currentTime = System.currentTimeMillis() - startTime;
-        //}
+        }
 
         System.out.println("Número de iterações executadas: " + numberOfIterations);
         System.out.println("Ultima iteração onde um ótimo foi encontrado: " + lastIterationBest);
@@ -212,6 +215,20 @@ public class HMM extends HyperHeuristic {
     public String toString() {
         return "HMM"; //To change body of generated methods, choose Tools | Templates.
     }
+    
+    //roulette wheel selection
+    private int select(double[][] matrix, int llh){
+        double rand = rng.nextDouble();
+        int index = 0;
+        //System.out.println("Número sorteado: " + rand);
+        double sum = matrix[llh][index];
+        while(rand > sum){
+            index++;
+            sum +=  matrix[llh][index];   
+        }
+        //System.out.println("Index escolhido: "  + index);
+        return index;
+    }
 
     private void initializeNonCrossoverHeuristics() {
         for (int i = 0; i < local_search_heuristics.length; i++) {
@@ -246,7 +263,7 @@ public class HMM extends HyperHeuristic {
     }
 
     private void initializeProbabilities(double[][] matrix, int tam) {
-        double prob = 1.0/(double)tam;
+        double prob = 1.0 / (double) tam;
         for (int i = 0; i < realNumberOfHeuristics; i++) {
             for (int j = 0; j < tam; j++) {
                 matrix[i][j] = prob;
@@ -254,8 +271,12 @@ public class HMM extends HyperHeuristic {
         }
     }
 
-    private void updateScore(double[][] matrix, int pastheuristic, int current, int element) {
-        matrix[current][element] += 1;
+    private void updateScore(int[][] matrix, int heuristic, int selectedIndex) {
+        matrix[heuristic][selectedIndex] += 1;
+    }
+    
+    private void updateProbabilities(double[][] matrix, int heuristic, int selectedIndex) {
+        matrix[heuristic][selectedIndex] += 1;
     }
 
     private int[] getAcceptances() {
@@ -269,24 +290,23 @@ public class HMM extends HyperHeuristic {
         }
         return aux;
     }
-    
-    private void printDoubleMatrix(double[][] matrix, int m){
-        for(int i = 0 ; i < matrix.length; i++){
+
+    private void printDoubleMatrix(double[][] matrix, int m) {
+        for (int i = 0; i < matrix.length; i++) {
             for (int j = 0; j < m; j++) {
-                System.out.print(matrix[i][j]+" ");
-            }
-            System.out.println("");
-        }
-    }
-    
-    private void printIntMatrix(int[][] matrix, int m){
-        for(int i = 0 ; i < matrix.length; i++){
-            for (int j = 0; j < m; j++) {
-                System.out.print(matrix[i][j]+" ");
+                System.out.print(matrix[i][j] + " ");
             }
             System.out.println("");
         }
     }
 
+    private void printIntMatrix(int[][] matrix, int m) {
+        for (int i = 0; i < matrix.length; i++) {
+            for (int j = 0; j < m; j++) {
+                System.out.print(matrix[i][j] + " ");
+            }
+            System.out.println("");
+        }
+    }
 
 }
