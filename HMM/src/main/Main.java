@@ -31,7 +31,7 @@ public class Main {
     public static void main(String[] args) throws IllegalArgumentException {
         DecimalFormat fmt = new DecimalFormat("0.00");
         ProblemDomain problem;
-        long timeLimit = 10000;
+        long timeLimit = 480000;
         int instance = 7;
         //long seed = 1234;
         long seed = System.currentTimeMillis();

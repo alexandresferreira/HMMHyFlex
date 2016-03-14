@@ -34,7 +34,7 @@ public class RecordToRecord extends AcceptanceCriterion {
             acp = true;
             numberOfIterationsStuck++;
         } //worsen
-        else if (newFitness < (currentFitness + D)) {
+        else if (newFitness < (bestFitness + D)) {
             acp = true;
         }
 

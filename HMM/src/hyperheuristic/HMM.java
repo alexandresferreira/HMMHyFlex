@@ -104,7 +104,7 @@ public class HMM extends HyperHeuristic {
     @Override
     protected void solve(ProblemDomain problem) {
         initializeValues(problem);
-        printDoubleMatrix(transHeuristics);
+        //printDoubleMatrix(transHeuristics);
         problem.setMemorySize(12);
         long endTime;
         int auxNumberIt = 0;
@@ -123,11 +123,11 @@ public class HMM extends HyperHeuristic {
         while (!hasTimeExpired()) {
             //lastCalledHeuristic = selection.selectHeuristic();
             currHeuristic = select(transHeuristics, prevHeuristic);
-            System.out.print("Heuristica escolhida: " + currHeuristic + " ");
+            //System.out.print("Heuristica escolhida: " + currHeuristic + " ");
             p = select(transParameters, currHeuristic);
-           System.out.print("Parâmetro: " + parameters[p] + " ");
+           //System.out.print("Parâmetro: " + parameters[p] + " ");
             a = select(transAcceptances, currHeuristic);
-           System.out.println("Accep: " + acceptances[a]);
+           //System.out.println("Accep: " + acceptances[a]);
             problem.setIntensityOfMutation(parameters[p]);
             problem.setDepthOfSearch(parameters[p]);
             
@@ -151,17 +151,20 @@ public class HMM extends HyperHeuristic {
                         updateScore(scoresParameters, currHeuristic, p);
                         updateScore(scoresAcceptances, currHeuristic, a);
                         updateProbabilities(scoresHeuristics, transHeuristics, prevHeuristic, currHeuristic);
-                        printDoubleMatrix(transHeuristics);
-                        System.out.println("Parâmetros");
+                        //printDoubleMatrix(transHeuristics);
+                        //System.out.println("Parâmetros");
                         updateProbabilities(scoresParameters, transParameters, currHeuristic, p);
-                        printDoubleMatrix(transParameters);
-                        System.out.println("Acceptances");
+                        //printDoubleMatrix(transParameters);
+                        //System.out.println("Acceptances");
                         updateProbabilities(scoresAcceptances, transAcceptances, currHeuristic, a);
-                        printDoubleMatrix(transAcceptances);
+                        //printDoubleMatrix(transAcceptances);
                         
                     }
                     currentFitness = newFitness;
                 }
+            }else{
+                problem.copySolution(1, 0);
+                currentFitness = newFitness;
             }
             
             numberOfIterations++;
