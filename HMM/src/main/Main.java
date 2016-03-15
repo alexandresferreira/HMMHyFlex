@@ -29,12 +29,12 @@ public class Main {
         DecimalFormat fmt = new DecimalFormat("0.00");
         ProblemDomain problem;
         long timeLimit = 600000;
-        int instance = 1;
+        int instance = 5;
         //long seed = 1234;
         long seed = System.currentTimeMillis();
         int acc = 0;
         //double scalingFactor = 10.0;
-        problem = new BinPacking(seed);
+        problem = new SAT(seed);
         if (args.length == 1) {
             // problem = getProblem(args[0], seed)1
         } else if (args.length == 3) {
@@ -62,16 +62,22 @@ public class Main {
 
     public static ProblemDomain getProblem(String problem, long seed) {
         if (problem.equals("BinPacking")) {
+            //instances 7	1	9	10	11
             return new BinPacking(seed);
         } else if (problem.equals("TSP")) {
+            //instances 0	8	2	7	6
             return new TSP(seed);
         } else if (problem.equals("MAXSAT")) {
+            //instances 3	5	4	10	11
             return new SAT(seed);
         } else if (problem.equals("PersonnelScheduling")) {
+            //instances 5	9	8	10	11
             return new PersonnelScheduling(seed);
         } else if (problem.equals("VRP")) {
+            //instances 6	2	5	1	9
             return new VRP(seed);
         } else if (problem.equals("FlowShop")) {
+            //instances 1	8	3	10	11
             return new FlowShop(seed);
         }
         return null;

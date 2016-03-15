@@ -72,7 +72,7 @@ public class HMM extends HyperHeuristic {
         heuristics = new ArrayList<Integer>();
         Vars.totalExecutionTime = totalExecTime;
         this.acceptanceType = acc;
-        acceptance = new NaiveAcceptance(rng);
+        acceptance = new RecordToRecord(rng);
         fmt = new DecimalFormat("0.00");
         heuristicTypeList = new HeuristicType[numberOfHeuristics];
         timesUsed = new double[numberOfHeuristics];
@@ -179,6 +179,15 @@ public class HMM extends HyperHeuristic {
         System.out.println("Ultima iteração onde um ótimo foi encontrado: " + lastIterationBest);
         //System.out.println("Parâmetros finais para o HyFlex: ");
         //double x[] = selection.getLevelOfChangeList();
+        System.out.println("Matriz Heuristicas:");
+        printDoubleMatrix(transHeuristics);
+        System.out.println("");
+        System.out.println("Matriz Parâmetros:");
+        printDoubleMatrix(transParameters);
+        System.out.println("");
+        System.out.println("Matriz Acceptances:");
+        printDoubleMatrix(transAcceptances);
+        System.out.println("");
         System.out.println("Vezes usada: ");
         for (int i = 0; i < realNumberOfHeuristics; i++) {
             System.out.println("Heurística: " + heuristics.get(i) + " " + timesUsed[heuristics.get(i)] + " " + fmt.format(timesUsed[heuristics.get(i)] * 100.0 / numberOfIterations) + "% Tempo "

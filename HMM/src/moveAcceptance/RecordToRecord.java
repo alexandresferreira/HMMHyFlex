@@ -14,7 +14,7 @@ import util.Vars;
  */
 public class RecordToRecord extends AcceptanceCriterion {
 
-    private final double T = 30;
+    private final double T = 0.20;
 
     public RecordToRecord(Random r) {
         super(r);
@@ -24,25 +24,6 @@ public class RecordToRecord extends AcceptanceCriterion {
     public boolean accept(double newFitness, double currentFitness, double bestFitness) {
         boolean acp = false;
         double threshold;
-        //threshold
-        if (bestFitness < 1) {
-            //System.out.println("Best Fitness: " + bestFitness);
-            double x = T / bestFitness;
-            double aux = 10;
-            //int i = 0;
-            while ((Math.floor(x - (x % aux)) != aux) && ((Math.floor(x - (x % aux))/aux) > 10.0)) {
-                //System.out.println("aux: " + Math.floor(x - (x % aux)));
-                //System.out.println("resultado" + Math.floor(x - (x % aux))/aux);
-                aux *= 10;
-                //System.out.print("i: " + i + " ");
-                //i++;
-            }
-            threshold = T / (aux);
-            System.out.println("Treshold: " + threshold);
-        } else {
-            threshold = bestFitness + T;
-        }
-        //acceptance
         if (newFitness < currentFitness) {
             acp = true;
             if (newFitness < bestFitness) {
@@ -50,11 +31,10 @@ public class RecordToRecord extends AcceptanceCriterion {
                 Vars.isAtStuck = false;
             }
         }
-        //worsen
         else if (newFitness  == currentFitness) {
             acp = true;
         }
-        else if (newFitness < threshold) {
+        else if (newFitness < (bestFitness+(bestFitness*T))) {
             acp = true;
         }
         return acp;
